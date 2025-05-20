@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gestión de Cotizaciones y Pedidos</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>Gestión de Cotizaciones y Pedidos</header>
+<main>
+  <nav>
+    <button id="nav-client" class="active" aria-controls="client-view" aria-selected="true" role="tab">Cliente</button>
+    <button id="nav-company" aria-controls="company-view" aria-selected="false" role="tab">Empresa</button>
+  </nav>
+
+  <section id="client-view" class="content" role="tabpanel" aria-labelledby="nav-client" tabindex="0">
+    <h2>Solicitar Cotización</h2>
+    <form id="quote-request-form">
+      <label for="req-description">Descripción del trabajo o producto</label>
+      <textarea id="req-description" name="req-description" rows="3" placeholder="Describe tu solicitud..." required></textarea>
+
+      <label for="req-details">Detalles adicionales (cantidad, medidas, materiales)</label>
+      <textarea id="req-details" name="req-details" rows="2" placeholder="Cantidad, medidas, materiales, etc."></textarea>
+
+      <label for="req-deadline">Fecha límite (opcional)</label>
+      <input type="date" id="req-deadline" name="req-deadline" />
+
+      <label for="req-attachments">Adjuntar archivos de referencia (imágenes, documentos)</label>
+      <input type="file" id="req-attachments" name="req-attachments" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"/>
+
+      <label for="client-name">Nombre completo</label>
+      <input type="text" id="client-name" name="client-name" placeholder="Tu nombre" required />
+
+      <label for="client-phone">Teléfono</label>
+      <input type="tel" id="client-phone" name="client-phone" placeholder="Tu teléfono" required />
+
+      <label for="client-email">Correo electrónico</label>
+      <input type="email" id="client-email" name="client-email" placeholder="Tu correo" required />
+
+      <button type="submit" class="primary">Enviar solicitud</button>
+    </form>
+
+    <hr />
+
+    <h2>Mis Cotizaciones</h2>
+    <div id="client-quotations" class="item-list scrollable" style="max-height: 280px;"></div>
+
+    <hr />
+
+    <h2>Seguimiento de Pedidos</h2>
+    <div id="client-orders" class="item-list scrollable" style="max-height: 280px;"></div>
+
+    <hr />
+
+    <h2>Mi Perfil</h2>
+    <form id="client-profile-form" class="profile-section profile-fields">
+      <label for="profile-name">Nombre completo</label>
+      <input type="text" id="profile-name" name="profile-name" required/>
+
+      <label for="profile-phone">Teléfono</label>
+      <input type="tel" id="profile-phone" name="profile-phone" required/>
+
+      <label for="profile-email">Correo electrónico</label>
+      <input type="email" id="profile-email" name="profile-email" required/>
+
+      <button type="submit" class="primary">Guardar Perfil</button>
+    </form>
+  </section>
+
+  <section id="company-view" class="content" role="tabpanel" aria-labelledby="nav-company" tabindex="0" hidden>
+    <h2>Panel de Cotizaciones Recibidas</h2>
+    <div id="company-quotations" class="item-list scrollable" style="max-height: 420px;"></div>
+
+    <hr />
+
+    <h2>Formulario para enviar Cotización</h2>
+    <form id="company-quote-form">
+      <label for="comp-quote-client">Cliente</label>
+      <select id="comp-quote-client" name="comp-quote-client" required>
+        <option value="">Selecciona un cliente</option>
+      </select>
+
+      <label for="comp-quote-desc">Descripción</label>
+      <textarea id="comp-quote-desc" name="comp-quote-desc" rows="2" placeholder="Descripción detallada..." required></textarea>
+
+      <label for="comp-quote-price">Precio total (USD)</label>
+      <input type="number" min="0" step="0.01" id="comp-quote-price" name="comp-quote-price" placeholder="Precio $" required />
+
+      <label for="comp-quote-comments">Comentarios para el cliente</label>
+      <textarea id="comp-quote-comments" name="comp-quote-comments" rows="2" placeholder="Comentarios, condiciones, etc."></textarea>
+
+      <button type="submit" class="primary">Enviar Cotización</button>
+    </form>
+
+    <hr />
+
+    <h2>Gestión de Pedidos</h2>
+    <div id="company-orders" class="item-list scrollable" style="max-height: 240px;"></div>
+  </section>
+</main>
+
+<div id="notification-popup" role="alert" aria-live="assertive" tabindex="0"></div>
+
+<script>
+  (() => {
+    // Utility functions
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+    // LocalStorage keys
+    const STORAGE_KEYS = {
+      CLIENTS: 'app_clients',
+      QUOTATIONS: 'app_quotations',
+      ORDERS: 'app_orders',
+      PROFILE: 'app_client_profile',
+    };
+
+    // Generate unique ID
+    function generateId() {
+      return 'id_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // App state
+    let state = {
+      clients: [],
+      quotations: [],
+      orders: [],
+      profile: null,
+      currentTab: 'client', // or 'company'
+    };
+
+    // Select elements
+    const navClientBtn = $('#nav-client');
+    const navCompanyBtn = $('#nav-company');
+    const clientView = $('#client-view');
+    const companyView = $('#company-view');
+
+    const clientQuoteForm = $('#quote-request-form');
+    const clientQuotationsList = $('#client-quotations');
+    const clientOrdersList = $('#client-orders');
+    const clientProfileForm = $('#client-profile-form');
+
+    const companyQuotationsList = $('#company-quotations');
+    const companyOrdersList = $('#company-orders');
+    const companyQuoteForm = $('#company-quote-form');
+    const compQuoteClientSelect = $('#comp-quote-client');
+
+    const notificationPopup = $('#notification-popup');
+
+    // Load state from localStorage
+    function loadState() {
+      const clientsData = localStorage.getItem(STORAGE_KEYS.CLIENTS);
+      if (clientsData) {
+        state.clients = JSON.parse(clientsData);
+      }
+
+      const quotesData = localStorage.getItem(STORAGE_KEYS.QUOTATIONS);
+      if (quotesData) {
+        state.quotations = JSON.parse(quotesData);
+      }
+
+      const ordersData = localStorage.getItem(STORAGE_KEYS.ORDERS);
+      if (ordersData) {
+        state.orders = JSON.parse(ordersData);
+      }
+
+      const profileData = localStorage.getItem(STORAGE_KEYS.PROFILE);
+      if (profileData) {
+        state.profile = JSON.parse(profileData);
+      }
+    }
+
+    // Save state to localStorage
+    function saveState() {
+      localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(state.clients));
+      localStorage.setItem(STORAGE_KEYS.QUOTATIONS, JSON.stringify(state.quotations));
+      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(state.orders));
+      if(state.profile)
+        localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(state.profile));
+    }
+
+    // Find current client by profile email or phone
+    function getCurrentClient() {
+      if (!state.profile) return null;
+      return state.clients.find(c =>
+        c.email === state.profile.email && c.phone === state.profile.phone
+      );
+    }
+
+    // Add client if not exists
+    function addClientIfNotExists(profileData) {
+      let existing = state.clients.find(c => c.email === profileData.email && c.phone === profileData.phone);
+      if (!existing) {
+        existing = {
+          id: generateId(),
+          name: profileData.name,
+          email: profileData.email,
+          phone: profileData.phone,
+        };
+        state.clients.push(existing);
+        saveState();
+      }
+      return existing;
+    }
+
+    // Show notification popup
+    let notificationTimeout = null;
+    function showNotification(message) {
+      notificationPopup.textContent = message;
+      notificationPopup.style.display = 'block';
+      notificationPopup.focus();
+      if (notificationTimeout) clearTimeout(notificationTimeout);
+      notificationTimeout = setTimeout(() => {
+        notificationPopup.style.display = 'none';
+      }, 4500);
+    }
+
+    notificationPopup.addEventListener('click', () => {
+      notificationPopup.style.display = 'none';
+      if (notificationTimeout) clearTimeout(notificationTimeout);
+    });
+
+    // Navigation handlers
+    function setActiveTab(tab) {
+      state.currentTab = tab;
+      if (tab === 'client') {
+        navClientBtn.classList.add('active');
+        navClientBtn.setAttribute('aria-selected', 'true');
+        navCompanyBtn.classList.remove('active');
+        navCompanyBtn.setAttribute('aria-selected', 'false');
+
+        clientView.hidden = false;
+        companyView.hidden = true;
+      } else {
+        navCompanyBtn.classList.add('active');
+        navCompanyBtn.setAttribute('aria-selected', 'true');
+        navClientBtn.classList.remove('active');
+        navClientBtn.setAttribute('aria-selected', 'false');
+
+        companyView.hidden = false;
+        clientView.hidden = true;
+      }
+    }
+
+    navClientBtn.onclick = () => setActiveTab('client');
+    navCompanyBtn.onclick = () => {
+      setActiveTab('company');
+      refreshCompanyClientSelect();
+      renderCompanyQuotations();
+      renderCompanyOrders();
+    };
+
+    // --- CLIENT APP ---
+
+    // Render client quotations
+    function renderClientQuotations() {
+      clientQuotationsList.innerHTML = '';
+      const client = getCurrentClient();
+      if (!client) {
+        clientQuotationsList.innerHTML = '<p>Por favor, completa tu perfil para ver tus cotizaciones.</p>';
+        return;
+      }
+      const clientQuotes = state.quotations.filter(q => q.clientId === client.id);
+      if (clientQuotes.length === 0) {
+        clientQuotationsList.innerHTML = '<p>No tienes cotizaciones aún.</p>';
+        return;
+      }
+      clientQuotes.forEach(q => {
+        const item = document.createElement('div');
+        item.classList.add('item');
+
+        const statusTag = document.createElement('span');
+        statusTag.classList.add('tag');
+        statusTag.textContent = q.status.toUpperCase().replace('_',' ');
+        switch (q.status) {
+          case 'pending': statusTag.classList.add('pending'); break;
+          case 'approved': statusTag.classList.add('approved'); break;
+          case 'rejected': statusTag.classList.add('rejected'); break;
+          default: statusTag.classList.add('pending');
+        }
+
+        const header = document.createElement('div');
+        header.classList.add('item-header');
+        const title = document.createElement('h3');
+        title.textContent = `Cotización #${q.id.substr(-5)} - $${q.price !== null ? q.price.toFixed(2) : 'Pendiente'}`;
+        header.appendChild(title);
+        header.appendChild(statusTag);
+        item.appendChild(header);
+
+        const desc = document.createElement('p');
+        desc.textContent = q.description || 'No hay descripción.';
+        item.appendChild(desc);
+
+        if(q.comments) {
+          const com = document.createElement('p');
+          com.textContent = `Comentarios: ${q.comments}`;
+          com.style.fontStyle = 'italic';
+          com.style.color = '#555';
+          item.appendChild(com);
+        }
+
+        // Show buttons for pending to approve/reject
+        if (q.status === 'pending' && q.price !== null) {
+          const btnRow = document.createElement('div');
+          btnRow.classList.add('buttons-row');
+          const approveBtn = document.createElement('button');
+          approveBtn.classList.add('primary');
+          approveBtn.textContent = 'Aprobar';
+          approveBtn.onclick = () => {
+            updateQuoteStatus(q.id, 'approved');
+            showNotification('Cotización aprobada');
+            renderClientQuotations();
+            renderClientOrders();
+            renderCompanyOrders();
+          };
+          const rejectBtn = document.createElement('button');
+          rejectBtn.classList.add('secondary');
+          rejectBtn.textContent = 'Rechazar';
+          rejectBtn.onclick = () => {
+            updateQuoteStatus(q.id, 'rejected');
+            showNotification('Cotización rechazada');
+            renderClientQuotations();
+            renderCompanyOrders();
+          };
+          btnRow.appendChild(approveBtn);
+          btnRow.appendChild(rejectBtn);
+          item.appendChild(btnRow);
+        }
+
+        clientQuotationsList.appendChild(item);
+      });
+    }
+
+    // Update quote status and create order if approved
+    function updateQuoteStatus(quoteId, newStatus) {
+      const quote = state.quotations.find(q => q.id === quoteId);
+      if (!quote) return;
+      if (quote.status === newStatus) return;
+      quote.status = newStatus;
+      saveState();
+
+      if(newStatus === 'approved') {
+        // Create a new order if not already exists for this quote
+        if (!state.orders.some(o => o.quoteId === quoteId)) {
+          const newOrder = {
+            id: generateId(),
+            quoteId: quoteId,
+            clientId: quote.clientId,
+            status: 'in-production',
+            createdAt: new Date().toISOString(),
+            estimatedCompletion: null,
+          };
+          state.orders.push(newOrder);
+          saveState();
+        }
+      }
+      if(newStatus === 'rejected') {
+        // Remove any order related to quote if rejected
+        state.orders = state.orders.filter(o => o.quoteId !== quoteId);
+        saveState();
+      }
+    }
+
+    // Render client orders
+    function renderClientOrders() {
+      clientOrdersList.innerHTML = '';
+      const client = getCurrentClient();
+      if (!client) {
+        clientOrdersList.innerHTML = '<p>Por favor, completa tu perfil para ver tus pedidos.</p>';
+        return;
+      }
+      const clientOrders = state.orders.filter(o => o.clientId === client.id);
+      if (clientOrders.length === 0) {
+        clientOrdersList.innerHTML = '<p>No tienes pedidos en curso.</p>';
+        return;
+      }
+      clientOrders.forEach(order => {
+        const quote = state.quotations.find(q => q.id === order.quoteId);
+        const item = document.createElement('div');
+        item.classList.add('item');
+
+        const statusTag = document.createElement('span');
+        statusTag.classList.add('tag');
+        statusTag.textContent = order.status.toUpperCase().replace('_',' ');
+        switch (order.status) {
+          case 'in-production': statusTag.classList.add('in-production'); break;
+          case 'finished': statusTag.classList.add('finished'); break;
+          case 'ready': statusTag.classList.add('ready'); break;
+          default: statusTag.classList.add('in-production');
+        }
+
+        const header = document.createElement('div');
+        header.classList.add('item-header');
+        const title = document.createElement('h3');
+        title.textContent = `Pedido #${order.id.substr(-5)}`;
+        header.appendChild(title);
+        header.appendChild(statusTag);
+        item.appendChild(header);
+
+        if(quote) {
+          const desc = document.createElement('p');
+          desc.textContent = `Cotización #${quote.id.substr(-5)} - ${quote.description}`;
+          item.appendChild(desc);
+          if(quote.price !== null) {
+            const price = document.createElement('p');
+            price.textContent = `Precio total: $${quote.price.toFixed(2)}`;
+            price.style.fontWeight = '700';
+            item.appendChild(price);
+          }
+        }
+
+        if (order.estimatedCompletion) {
+          const est = document.createElement('p');
+          est.textContent = `Fecha estimada de finalización: ${order.estimatedCompletion}`;
+          item.appendChild(est);
+        }
+
+        // If order ready, show pickup info
+        if (order.status === 'ready') {
+          const pickupInfo = document.createElement('p');
+          pickupInfo.innerHTML = `<strong>Pedido listo para recoger:</strong><br>Dirección: Calle Falsa 123<br>Horario: Lunes a viernes 9:00 - 18:00`;
+          item.appendChild(pickupInfo);
+        }
+
+        clientOrdersList.appendChild(item);
+      });
+    }
+
+    // Handle client quote request submission
+    clientQuoteForm.onsubmit = (e) => {
+      e.preventDefault();
+
+      if (!state.profile) {
+        showNotification('Por favor, completa tu perfil antes de enviar una solicitud.');
+        return;
+      }
+
+      const description = clientQuoteForm['req-description'].value.trim();
+      const details = clientQuoteForm['req-details'].value.trim();
+      const deadline = clientQuoteForm['req-deadline'].value;
+      const attachments = clientQuoteForm['req-attachments'].files;
+      // Contact info from profile
+      const name = state.profile.name;
+      const phone = state.profile.phone;
+      const email = state.profile.email;
+
+      if (!description || !name || !phone || !email) {
+        showNotification('Por favor, completa todos los campos obligatorios.');
+        return;
+      }
+
+      // Add client if not exists 
+      const client = addClientIfNotExists(state.profile);
+
+      // Create quotation request with pending price (null)
+      const newQuote = {
+        id: generateId(),
+        clientId: client.id,
+        description: description + (details ? ' - ' + details : ''),
+        attachments: [],
+        deadline: deadline || null,
+        status: 'pending',
+        price: null,
+        comments: null,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Simulate attachments storing base64 (only images for demo)
+      if (attachments.length > 0) {
+        for(let file of attachments){
+          if(file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              newQuote.attachments.push({
+                name: file.name,
+                type: file.type,
+                dataUrl: event.target.result
+              });
+              saveAndRender();
+            };
+            reader.readAsDataURL(file);
+          } else {
+            newQuote.attachments.push({
+              name: file.name,
+              type: file.type,
+              dataUrl: null // Can't preview
+            });
+          }
+        }
+      }
+      // If no attachments or non image ones, save now
+      if (attachments.length === 0) {
+        saveAndRender();
+      }
+
+      function saveAndRender() {
+        // Push quote only if not exists already (avoid duplicates on file read async)
+        if (!state.quotations.some(q => q.id === newQuote.id)) {
+          state.quotations.push(newQuote);
+          saveState();
+          showNotification('Solicitud de cotización enviada');
+          renderClientQuotations();
+          renderCompanyQuotations();
+        }
+      }
+
+      // Reset form to empty
+      clientQuoteForm.reset();
+    };
+
+    // --- CLIENT PROFILE ---
+
+    // Load profile data into form
+    function loadProfileForm() {
+      if(state.profile) {
+        clientProfileForm['profile-name'].value = state.profile.name;
+        clientProfileForm['profile-phone'].value = state.profile.phone;
+        clientProfileForm['profile-email'].value = state.profile.email;
+      }
+    }
+
+    // Save profile data from form
+    clientProfileForm.onsubmit = (e) => {
+      e.preventDefault();
+      const name = clientProfileForm['profile-name'].value.trim();
+      const phone = clientProfileForm['profile-phone'].value.trim();
+      const email = clientProfileForm['profile-email'].value.trim();
+      if (!name || !phone || !email) {
+        showNotification('Por favor, completa todos los campos del perfil.');
+        return;
+      }
+      state.profile = { name, phone, email };
+      saveState();
+      addClientIfNotExists(state.profile);
+      showNotification('Perfil guardado');
+      renderClientQuotations();
+      renderClientOrders();
+    };
+
+    // --- COMPANY APP ---
+
+    // Refresh client select options in company quote form
+    function refreshCompanyClientSelect() {
+      compQuoteClientSelect.innerHTML = `<option value="">Selecciona un cliente</option>`;
+      state.clients.forEach(client => {
+        const opt = document.createElement('option');
+        opt.value = client.id;
+        opt.textContent = `${client.name} - ${client.email}`;
+        compQuoteClientSelect.appendChild(opt);
+      });
+    }
+
+    // Render company quotations list
+    function renderCompanyQuotations() {
+      companyQuotationsList.innerHTML = '';
+      if(state.quotations.length === 0){
+        companyQuotationsList.innerHTML = '<p>No hay cotizaciones recibidas.</p>';
+        return;
+      }
+      state.quotations.forEach(q => {
+        const client = state.clients.find(c => c.id === q.clientId);
+        const item = document.createElement('div');
+        item.classList.add('item');
+
+        const statusTag = document.createElement('span');
+        statusTag.classList.add('tag');
+        statusTag.textContent = q.status.toUpperCase().replace('_',' ');
+        switch (q.status) {
+          case 'pending': statusTag.classList.add('pending'); break;
+          case 'approved': statusTag.classList.add('approved'); break;
+          case 'rejected': statusTag.classList.add('rejected'); break;
+          default: statusTag.classList.add('pending');
+        }
+
+        const header = document.createElement('div');
+        header.classList.add('item-header');
+        const title = document.createElement('h3');
+        title.textContent = `Cotización #${q.id.substr(-5)} - ${client ? client.name : 'Cliente Desconocido'}`;
+        header.appendChild(title);
+        header.appendChild(statusTag);
+        item.appendChild(header);
+
+        const desc = document.createElement('p');
+        desc.textContent = q.description || 'No hay descripción.';
+        item.appendChild(desc);
+
+        if(q.attachments && q.attachments.length > 0) {
+          const attachList = document.createElement('ul');
+          attachList.style.fontSize = '0.85rem';
+          attachList.style.color = '#555';
+          attachList.textContent = 'Archivos adjuntos:';
+          q.attachments.forEach(a => {
+            const li = document.createElement('li');
+            if(a.type.startsWith('image/') && a.dataUrl) {
+              const img = document.createElement('img');
+              img.src = a.dataUrl;
+              img.alt = a.name;
+              img.style.maxWidth = '80px';
+              img.style.maxHeight = '80px';
+              img.style.display = 'block';
+              img.style.marginTop = '0.3rem';
+              li.textContent = a.name + ' ';
+              li.appendChild(img);
+            } else {
+              li.textContent = a.name;
+            }
+            attachList.appendChild(li);
+          });
+          item.appendChild(attachList);
+        }
+
+        // Show price input if pending
+        if(q.status === 'pending' && (q.price === null || q.price === 0)) {
+          const form = document.createElement('form');
+          form.style.marginTop = '0.8rem';
+
+          const labelPrice = document.createElement('label');
+          labelPrice.textContent = 'Precio total (USD)';
+          labelPrice.setAttribute('for', 'price-input-' + q.id);
+          form.appendChild(labelPrice);
+
+          const inputPrice = document.createElement('input');
+          inputPrice.type = 'number';
+          inputPrice.min = '0';
+          inputPrice.step = '0.01';
+          inputPrice.id = 'price-input-' + q.id;
+          inputPrice.placeholder = 'Ej. 150.00';
+          inputPrice.required = true;
+          inputPrice.style.marginBottom = '0.4rem';
+          form.appendChild(inputPrice);
+
+          const labelComments = document.createElement('label');
+          labelComments.textContent = 'Comentarios (opcional)';
+          labelComments.setAttribute('for', 'comments-input-' + q.id);
+          form.appendChild(labelComments);
+
+          const textareaComments = document.createElement('textarea');
+          textareaComments.id = 'comments-input-' + q.id;
+          textareaComments.rows = 2;
+          textareaComments.placeholder = 'Comentarios para el cliente...';
+          form.appendChild(textareaComments);
+
+          const sendBtn = document.createElement('button');
+          sendBtn.type = 'submit';
+          sendBtn.classList.add('primary');
+          sendBtn.textContent = 'Enviar cotización';
+          form.appendChild(sendBtn);
+
+          form.onsubmit = (evt) => {
+            evt.preventDefault();
+            const priceVal = parseFloat(inputPrice.value);
+            if (isNaN(priceVal) || priceVal <= 0) {
+              alert('Por favor, ingresa un precio válido');
+              return;
+            }
+            q.price = priceVal;
+            q.comments = textareaComments.value.trim() || null;
+            q.status = 'pending'; // stay pending until client approves
+            saveState();
+            showNotification('Cotización enviada al cliente para aprobación');
+            renderCompanyQuotations();
+            renderClientQuotations();
+          };
+
+          item.appendChild(form);
+        } else {
+          // Show price and comments
+          if (q.price !== null) {
+            const priceP = document.createElement('p');
+            priceP.innerHTML = `<strong>Precio total:</strong> $${q.price.toFixed(2)}`;
+            item.appendChild(priceP);
+          }
+          if (q.comments) {
+            const comP = document.createElement('p');
+            comP.innerHTML = `<em>Comentarios:</em> ${q.comments}`;
+            item.appendChild(comP);
+          }
+        }
+
+        // Buttons to change status
+        if (q.status === 'approved' || q.status === 'rejected') {
+          const btnRow = document.createElement('div');
+          btnRow.classList.add('buttons-row');
+
+          if (q.status === 'approved') {
+            const createOrderBtn = document.createElement('button');
+            createOrderBtn.classList.add('primary');
+            createOrderBtn.textContent = 'Crear Pedido y Enviar';
+            createOrderBtn.onclick = () => {
+              let existingOrder = state.orders.find(o => o.quoteId === q.id);
+              if(existingOrder) {
+                alert('Este pedido ya fue creado.');
+                return;
+              }
+              const order = {
+                id: generateId(),
+                quoteId: q.id,
+                clientId: q.clientId,
+                status: 'in-production',
+                createdAt: new Date().toISOString(),
+                estimatedCompletion: null,
+              };
+              state.orders.push(order);
+              saveState();
+              showNotification('Pedido creado y en producción');
+              renderCompanyOrders();
+              renderClientOrders();
+            };
+            btnRow.appendChild(createOrderBtn);
+          }
+
+          companyQuotationsList.appendChild(item);
+          return;
+        }
+
+        companyQuotationsList.appendChild(item);
+      });
+    }
+
+    // Handle company form submit to create/send quotation - general form
+    companyQuoteForm.onsubmit = (e) => {
+      e.preventDefault();
+      const clientId = companyQuoteForm['comp-quote-client'].value;
+      const desc = companyQuoteForm['comp-quote-desc'].value.trim();
+      const price = parseFloat(companyQuoteForm['comp-quote-price'].value);
+      const comments = companyQuoteForm['comp-quote-comments'].value.trim();
+
+      if (!clientId || !desc || isNaN(price) || price <= 0) {
+        showNotification('Por favor, completa todos los campos obligatorios.');
+        return;
+      }
+
+      // Create new quotation with approved status to simulate sending
+      const newQuote = {
+        id: generateId(),
+        clientId,
+        description: desc,
+        attachments: [],
+        deadline: null,
+        status: 'pending', // Clients still approve for the simulation
+        price: price,
+        comments: comments || null,
+        createdAt: new Date().toISOString(),
+      };
+
+      state.quotations.push(newQuote);
+      saveState();
+
+      showNotification('Cotización creada y enviada al cliente');
+      companyQuoteForm.reset();
+      renderCompanyQuotations();
+      renderClientQuotations();
+    };
+
+    // Render company orders list
+    function renderCompanyOrders() {
+      companyOrdersList.innerHTML = '';
+      if(state.orders.length === 0){
+        companyOrdersList.innerHTML = '<p>No hay pedidos activos.</p>';
+        return;
+      }
+      state.orders.forEach(order => {
+        const quote = state.quotations.find(q => q.id === order.quoteId);
+        const client = state.clients.find(c => c.id === order.clientId);
+
+        const item = document.createElement('div');
+        item.classList.add('item');
+
+        const statusTag = document.createElement('span');
+        statusTag.classList.add('tag');
+        statusTag.textContent = order.status.toUpperCase().replace('_',' ');
+        switch (order.status) {
+          case 'in-production': statusTag.classList.add('in-production'); break;
+          case 'finished': statusTag.classList.add('finished'); break;
+          case 'ready': statusTag.classList.add('ready'); break;
+          default: statusTag.classList.add('in-production');
+        }
+
+        const header = document.createElement('div');
+        header.classList.add('item-header');
+        const title = document.createElement('h3');
+        title.textContent = `Pedido #${order.id.substr(-5)} - ${client ? client.name : 'Cliente Desconocido'}`;
+        header.appendChild(title);
+        header.appendChild(statusTag);
+        item.appendChild(header);
+
+        if(quote) {
+          const desc = document.createElement('p');
+          desc.textContent = `Cotización asociada: ${quote.description}`;
+          item.appendChild(desc);
+          if(quote.price !== null) {
+            const price = document.createElement('p');
+            price.textContent = `Precio: $${quote.price.toFixed(2)}`;
+            price.style.fontWeight = '700';
+            item.appendChild(price);
+          }
+        }
+
+        const statusForm = document.createElement('form');
+        statusForm.style.marginTop = '0.5rem';
+
+        const statusLabel = document.createElement('label');
+        statusLabel.textContent = 'Estado del pedido';
+        statusLabel.setAttribute('for', 'order-status-select-' + order.id);
+        statusForm.appendChild(statusLabel);
+
+        const statusSelect = document.createElement('select');
+        statusSelect.id = 'order-status-select-' + order.id;
+        ['in-production', 'finished', 'ready'].forEach(st => {
+          const opt = document.createElement('option');
+          opt.value = st;
+          opt.textContent = st.charAt(0).toUpperCase() + st.slice(1).replace('-', ' ');
+          if(order.status === st) opt.selected = true;
+          statusSelect.appendChild(opt);
+        });
+        statusForm.appendChild(statusSelect);
+
+        const estLabel = document.createElement('label');
+        estLabel.textContent = 'Fecha estimada de finalización';
+        estLabel.style.marginTop = '0.5rem';
+        estLabel.setAttribute('for', 'order-estimated-completion-' + order.id);
+        statusForm.appendChild(estLabel);
+
+        const estInput = document.createElement('input');
+        estInput.type = 'date';
+        estInput.id = 'order-estimated-completion-' + order.id;
+        estInput.value = order.estimatedCompletion || '';
+        estInput.style.marginBottom = '0.5rem';
+        statusForm.appendChild(estInput);
+
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'submit';
+        saveBtn.classList.add('primary');
+        saveBtn.textContent = 'Guardar cambios';
+        statusForm.appendChild(saveBtn);
+
+        statusForm.onsubmit = (evt) => {
+          evt.preventDefault();
+          order.status = statusSelect.value;
+          order.estimatedCompletion = estInput.value || null;
+          saveState();
+          showNotification('Estado del pedido actualizado');
+          renderCompanyOrders();
+          renderClientOrders();
+          // Notify client about order status update
+          const clientName = client ? client.name : 'El cliente';
+          showNotification(`Pedido para ${clientName} actualizado a ${order.status.replace('-', ' ')}`);
+        };
+
+        item.appendChild(statusForm);
+
+        companyOrdersList.appendChild(item);
+      });
+    }
+
+    // Initialize on page load
+    function init() {
+      loadState();
+      setActiveTab(state.currentTab);
+      loadProfileForm();
+      renderClientQuotations();
+      renderClientOrders();
+      refreshCompanyClientSelect();
+      renderCompanyQuotations();
+      renderCompanyOrders();
+    }
+
+    init();
+  })();
+</script>
+</body>
+</html>
+
