@@ -667,12 +667,12 @@
         toastElem.setAttribute('role', 'alert');
         toastElem.setAttribute('aria-live', 'assertive');
         toastElem.setAttribute('aria-atomic', 'true');
-        toastElem.innerHTML = `\`
+        toastElem.innerHTML =`\`
           <div class="d-flex">
             <div class="toast-body">\${message}</div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
           </div>
-        \`;
+          `;
         toastContainer.appendChild(toastElem);
         const bsToast = new bootstrap.Toast(toastElem, { delay });
         bsToast.show();
@@ -1144,7 +1144,7 @@
             btn.type = 'button';
             btn.classList.add('list-group-item', 'list-group-item-action');
             const statusClass = {
-              pendiete: '',
+              pendiente: '',
               pendiente: '',
               enviada: 'list-group-item-primary',
               aprobada: 'list-group-item-success',
