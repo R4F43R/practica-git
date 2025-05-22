@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Enviar Cotización - Gestión Cotizaciones y Pedidos</title>
+<style>
+  :root {
+    --primary-color: #2a9d8f;
+    --secondary-color: #264653;
+    --accent-color: #e76f51;
+    --background-color: #f4f4f9;
+    --text-color: #333;
+    --border-radius: 8px;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-family);
+    background: var(--background-color);
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+  }
+
+  header {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 1rem 2rem;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.8rem;
+    width: 100%;
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    user-select: none;
+  }
+
+  main {
+    width: 100%;
+    max-width: 520px;
+    background: white;
+    box-shadow: 0 0 10px rgb(0 0 0 / 0.05);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  label {
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+  }
+
+  select,
+  textarea,
+  input[type="number"] {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    font-family: var(--font-family);
+  }
+
+  select:focus,
+  textarea:focus,
+  input[type="number"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+
+  button.primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-weight: 700;
+  }
+
+  button.primary:hover {
+    background-color: #21867a;
+  }
+
+  p.message {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: var(--accent-color);
+  }
+
+  nav {
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  nav a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    margin: 0 1rem;
+  }
+
+  nav a:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+<header>Enviar Cotización</header>
+<main>
+<form id="company-quote-form" aria-label="Formulario para enviar cotización" novalidate>
+  <label for="comp-quote-client">Cliente</label>
+  <select id="comp-quote-client" name="comp-quote-client" required>
+    <option value="">Selecciona un cliente</option>
+  </select>
+
+  <label for="comp-quote-desc">Descripción</label>
+  <textarea id="comp-quote-desc" name="comp-quote-desc" rows="3" placeholder="Descripción detallada..." required></textarea>
+
+  <label for="comp-quote-price-unit">Precio por unidad (USD)</label>
+  <input type="number" min="0" step="0.01" id="comp-quote-price-unit" name="comp-quote-price-unit" placeholder="Precio $" required />
+
+  <label for="comp-quote-quantity">Cantidad</label>
+  <input type="number" min="1" step="1" id="comp-quote-quantity" name="comp-quote-quantity" placeholder="Cantidad" required />
+
+  <label>Impuesto (IVA 18%) incluido automáticamente</label>
+
+  <label for="comp-quote-comments">Comentarios para el cliente</label>
+  <textarea id="comp-quote-comments" name="comp-quote-comments" rows="2" placeholder="Comentarios, condiciones, etc."></textarea>
+
+  <button type="submit" class="primary">Enviar Cotización</button>
+  <p id="save-message" class="message" role="alert" aria-live="polite" style="display:none;">Cotización enviada correctamente.</p>
+</form>
+
+<nav>
+  <a href="profile.html">Ir a Perfil del Cliente</a>
+  <a href="company.html">Ir a Panel de Empresa</a>
+</nav>
+</main>
+
+<script>
+  (() => {
+    const STORAGE_KEYS = {
+      CLIENTS: 'app_clients',
+      QUOTATIONS: 'app_quotations',
+    };
+
+    const compQuoteClientSelect = document.getElementById('comp-quote-client');
+    const companyQuoteForm = document.getElementById('company-quote-form');
+    const saveMessage = document.getElementById('save-message');
+
+    // Load clients into select
+    function loadClients() {
+      let clients = [];
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.CLIENTS);
+        if(stored) {
+          clients = JSON.parse(stored);
+        }
+      } catch(e) {
+        console.error('Error parsing clients', e);
+      }
+      compQuoteClientSelect.innerHTML = '<option value="">Selecciona un cliente</option>';
+      clients.forEach(c => {
+        const option = document.createElement('option');
+        option.value = c.id;
+        option.textContent = `${c.name} - ${c.email}`;
+        compQuoteClientSelect.appendChild(option);
+      });
+    }
+
+    // Save quotation to localStorage
+    function saveQuotation(quote) {
+      let quotations = [];
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.QUOTATIONS);
+        if(stored) {
+          quotations = JSON.parse(stored);
+        }
+      } catch(e) {
+        console.error('Error parsing quotations', e);
+      }
+      quotations.push(quote);
+      localStorage.setItem(STORAGE_KEYS.QUOTATIONS, JSON.stringify(quotations));
+    }
+
+    companyQuoteForm.addEventListener('submit', e => {
+      e.preventDefault();
+
+      const clientId = companyQuoteForm['comp-quote-client'].value;
+      const desc = companyQuoteForm['comp-quote-desc'].value.trim();
+      const unitPrice = parseFloat(companyQuoteForm['comp-quote-price-unit'].value);
+      const qty = parseInt(companyQuoteForm['comp-quote-quantity'].value, 10);
+      const comments = companyQuoteForm['comp-quote-comments'].value.trim();
+
+      if(!clientId || !desc || isNaN(unitPrice) || unitPrice <= 0 || isNaN(qty) || qty < 1) {
+        alert('Por favor, completa todos los campos obligatorios con valores válidos.');
+        return;
+      }
+
+      const newQuote = {
+        id: 'id_' + Math.random().toString(36).substr(2,9),
+        clientId,
+        description: desc,
+        attachments: [],
+        deadline: null,
+        status: 'pending', // Client needs to approve
+        pricePerUnit: unitPrice,
+        quantity: qty,
+        comments: comments || null,
+        createdAt: new Date().toISOString(),
+      };
+
+      saveQuotation(newQuote);
+      saveMessage.style.display = 'block';
+      companyQuoteForm.reset();
+
+      setTimeout(() => {
+        saveMessage.style.display = 'none';
+      }, 4000);
+    });
+
+    // Initial load
+    loadClients();
+  })();
+</script>
+</body>
+</html>
+

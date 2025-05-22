@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Perfil del Cliente - Gestión Cotizaciones y Pedidos</title>
+<style>
+  :root {
+    --primary-color: #2a9d8f;
+    --secondary-color: #264653;
+    --accent-color: #e76f51;
+    --background-color: #f4f4f9;
+    --text-color: #333;
+    --border-radius: 8px;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-family);
+    background: var(--background-color);
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+  }
+
+  header {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 1rem 2rem;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.8rem;
+    width: 100%;
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    user-select: none;
+  }
+
+  main {
+    width: 100%;
+    max-width: 480px;
+    background: white;
+    box-shadow: 0 0 10px rgb(0 0 0 / 0.05);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  label {
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"] {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    font-family: var(--font-family);
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="tel"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+
+  button.primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-weight: 700;
+  }
+
+  button.primary:hover {
+    background-color: #21867a;
+  }
+
+  p.message {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: var(--accent-color);
+  }
+
+  nav {
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  nav a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    margin: 0 1rem;
+  }
+
+  nav a:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+<header>Perfil del Cliente</header>
+<main>
+  <form id="client-profile-form" aria-label="Formulario de perfil del cliente" novalidate>
+    <label for="profile-name">Nombre completo</label>
+    <input type="text" id="profile-name" name="profile-name" placeholder="Tu nombre" required autocomplete="name" />
+
+    <label for="profile-phone">Teléfono</label>
+    <input type="tel" id="profile-phone" name="profile-phone" placeholder="Tu teléfono" required autocomplete="tel" />
+
+    <label for="profile-email">Correo electrónico</label>
+    <input type="email" id="profile-email" name="profile-email" placeholder="Tu correo" required autocomplete="email" />
+
+    <button type="submit" class="primary">Guardar Perfil</button>
+    <p id="save-message" class="message" role="alert" aria-live="polite" style="display:none;">Perfil guardado correctamente.</p>
+  </form>
+
+  <nav>
+    <a href="send_quote.html">Ir a Enviar Cotización</a>
+    <a href="company.html">Ir a Panel de Empresa</a>
+  </nav>
+</main>
+
+<script>
+  (() => {
+    const STORAGE_KEYS = {
+      CLIENTS: 'app_clients',
+      PROFILE: 'app_client_profile',
+    };
+
+    const form = document.getElementById('client-profile-form');
+    const saveMessage = document.getElementById('save-message');
+
+    // Load profile from localStorage
+    function loadProfile() {
+      const data = localStorage.getItem(STORAGE_KEYS.PROFILE);
+      if(data) {
+        try {
+          const profile = JSON.parse(data);
+          form['profile-name'].value = profile.name || '';
+          form['profile-phone'].value = profile.phone || '';
+          form['profile-email'].value = profile.email || '';
+        } catch(e) {
+          console.error('Error parsing profile data', e);
+        }
+      }
+    }
+
+    // Add or update client in clients list
+    function addOrUpdateClient(profile) {
+      if(!profile.name || !profile.email || !profile.phone) return;
+
+      let clients = [];
+      const storedClients = localStorage.getItem(STORAGE_KEYS.CLIENTS);
+      if(storedClients) {
+        try {
+          clients = JSON.parse(storedClients);
+        } catch {}
+      }
+
+      // Trim inputs for matching
+      const pEmail = profile.email.trim();
+      const pPhone = profile.phone.trim();
+
+      let existing = clients.find(c => c.email === pEmail && c.phone === pPhone);
+      if(existing) {
+        // Update name only if changed
+        if(existing.name !== profile.name){
+          existing.name = profile.name;
+        }
+      } else {
+        existing = {
+          id: 'id_' + Math.random().toString(36).substr(2, 9),
+          name: profile.name,
+          email: pEmail,
+          phone: pPhone,
+        };
+        clients.push(existing);
+      }
+
+      localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+    }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+
+      // Validate fields (basic)
+      if(!form['profile-name'].value.trim() ||
+         !form['profile-phone'].value.trim() ||
+         !form['profile-email'].value.trim()) {
+         alert('Por favor, completa todos los campos del perfil.');
+         return;
+      }
+
+      const profile = {
+        name: form['profile-name'].value.trim(),
+        phone: form['profile-phone'].value.trim(),
+        email: form['profile-email'].value.trim(),
+      };
+
+      localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(profile));
+      addOrUpdateClient(profile);
+      saveMessage.style.display = 'block';
+      setTimeout(() => saveMessage.style.display = 'none', 3000);
+    });
+
+    loadProfile();
+  })();
+</script>
+</body>
+</html>
+

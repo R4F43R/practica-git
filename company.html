@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Panel de Empresa - Gestión Cotizaciones y Pedidos</title>
+<style>
+  :root {
+    --primary-color: #2a9d8f;
+    --secondary-color: #264653;
+    --accent-color: #e76f51;
+    --background-color: #f4f4f9;
+    --text-color: #333;
+    --border-radius: 8px;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-family);
+    background: var(--background-color);
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+  }
+
+  header {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 1rem 2rem;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.8rem;
+    width: 100%;
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    user-select: none;
+  }
+
+  main {
+    width: 100%;
+    max-width: 900px;
+    background: white;
+    box-shadow: 0 0 10px rgb(0 0 0 / 0.05);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+  }
+
+  h2 {
+    margin-top: 0;
+  }
+
+  .item-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border-top: 1px solid #ddd;
+  }
+
+  .item {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .tag {
+    background-color: var(--accent-color);
+    color: white;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    user-select: none;
+    text-transform: uppercase;
+  }
+
+  .tag.approved { background-color: #2a9d8f; }
+  .tag.pending { background-color: #e9c46a; color: #333; }
+  .tag.rejected { background-color: #f4a261; }
+  .tag.in-production { background-color: #264653; }
+  .tag.finished { background-color: #6a994e; }
+  .tag.ready { background-color: #e76f51; }
+
+  label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+  }
+
+  textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    font-family: var(--font-family);
+  }
+
+  select,
+  input[type="number"],
+  input[type="date"] {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    font-family: var(--font-family);
+  }
+
+  select:focus,
+  input[type="number"]:focus,
+  input[type="date"]:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+
+  button.primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 700;
+    transition: background-color 0.3s ease;
+  }
+
+  button.primary:hover {
+    background-color: #21867a;
+  }
+
+  button.secondary {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+    margin-right: 0.5rem;
+  }
+
+  button.secondary:hover {
+    background-color: #da5a3e;
+  }
+
+  .buttons-row {
+    margin-top: 0.5rem;
+  }
+
+  p.message {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: var(--accent-color);
+  }
+
+  nav {
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  nav a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    margin: 0 1rem;
+  }
+
+  nav a:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+<header>Panel de Empresa</header>
+<main>
+  <section aria-label="Cotizaciones recibidas">
+    <h2>Cotizaciones Recibidas</h2>
+    <div id="company-quotations" class="item-list" tabindex="0" aria-live="polite"></div>
+  </section>
+
+  <hr />
+
+  <section aria-label="Gestión de pedidos">
+    <h2>Gestión de Pedidos</h2>
+    <div id="company-orders" class="item-list" tabindex="0" aria-live="polite"></div>
+  </section>
+
+  <nav>
+    <a href="profile.html">Ir a Perfil del Cliente</a>
+    <a href="send_quote.html">Ir a Enviar Cotización</a>
+  </nav>
+</main>
+
+<script>
+  (() => {
+    const STORAGE_KEYS = {
+      CLIENTS: 'app_clients',
+      QUOTATIONS: 'app_quotations',
+      ORDERS: 'app_orders',
+    };
+
+    const companyQuotationsList = document.getElementById('company-quotations');
+    const companyOrdersList = document.getElementById('company-orders');
+
+    // Load data from localStorage
+    function loadData(key) {
+      try {
+        const val = localStorage.getItem(key);
+        if(val) {
+          return JSON.parse(val);
+        }
+      } catch(e) {
+        console.error(`Error parsing ${key}:`, e);
+      }
+      return [];
+    }
+
+    // Save data to localStorage
+    function saveData(key, data) {
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    // Calculate prices including tax
+    const TAX_RATE = 0.18;
+    function calculatePrices(pricePerUnit, quantity) {
+      const subTotal = pricePerUnit * quantity;
+      const taxAmount = subTotal * TAX_RATE;
+      const total = subTotal + taxAmount;
+      return { subTotal, taxAmount, total };
+    }
+
+    // Render company quotations
+    function renderQuotations() {
+      const quotes = loadData(STORAGE_KEYS.QUOTATIONS);
+      const clients = loadData(STORAGE_KEYS.CLIENTS);
+
+      if (quotes.length === 0) {
+        companyQuotationsList.innerHTML = '<p>No hay cotizaciones recibidas.</p>';
+        return;
+      }
+      companyQuotationsList.innerHTML = '';
+
+      quotes.forEach(q => {
+        const client = clients.find(c => c.id === q.clientId);
+
+        const item = document.createElement('div');
+        item.classList.add('item');
+
+        // Header with client name and status
+        const header = document.createElement('div');
+        header.classList.add('item-header');
+
+        const title = document.createElement('h3');
+        title.textContent = `Cotización #${q.id.substr(-5)} - ${client ? client.name : 'Cliente Desconocido'}`;
+
+        const statusTag = document.createElement('span');
+        statusTag.classList.add('tag');
+        statusTag.textContent = q.status.toUpperCase().replace('_', ' ');
+        switch(q.status) {
+          case 'pending': statusTag.classList.add('pending'); break;
+          case 'approved': statusTag.classList.add('approved'); break;
+          case 'rejected': statusTag.classList.add('rejected'); break;
+          default: statusTag.classList.add('pending'); 
+        }
+
+        header.appendChild(title);
+        header.appendChild(statusTag);
+        item.appendChild(header);
+
+        // Description
+        const descP = document.createElement('p');
+        descP.textContent = q.description || 'No hay descripción.';
+        item.appendChild(descP);
+
+        // Price details
+        if(q.pricePerUnit !== null && q.quantity !== null) {
+          const prices = calculatePrices(q.pricePerUnit, q.quantity);
+          const priceDetails = document.createElement('p');
+          priceDetails.innerHTML =
+            `Precio por unidad: $${q.pricePerUnit.toFixed(2)}<br>` +
+            `Cantidad: ${q.quantity}<br>` +
+            `Subtotal: $${prices.subTotal.toFixed(2)}<br>` +
+            `IVA (18%): $${prices.taxAmount.toFixed(2)}<br>` +
+            `<strong>Total: $${prices.total.toFixed(2)}</strong>`;
+
+          item.appendChild(priceDetails);
+        }
+
+        // Comments
+        if(q.comments) {
+          const commentsP = document.createElement('p');
+          commentsP.innerHTML = `<em>Comentarios:</em> ${q.comments}`;
+          item.appendChild(commentsP);
+        }
+
+        // Show controls if pending and missing price info (to allow setting from company)
+        if(q.status === 'pending' && (q.pricePerUnit === null || q.quantity === null)) {
+          const form = document.createElement('form');
+          form.style.marginTop = '0.8rem';
+
+          // Price per unit input
+          const labelPU = document.createElement('label');
+          labelPU.textContent = 'Precio por unidad (USD)';
+          labelPU.setAttribute('for', 'pu-' + q.id);
+          form.appendChild(labelPU);
+
+          const inputPU = document.createElement('input');
+          inputPU.type = 'number';
+          inputPU.min = '0';
+          inputPU.step = '0.01';
+          inputPU.id = 'pu-' + q.id;
+          inputPU.placeholder = 'Ej. 50.00';
+          inputPU.required = true;
+          inputPU.style.marginBottom = '0.4rem';
+          form.appendChild(inputPU);
+
+          // Quantity input
+          const labelQty = document.createElement('label');
+          labelQty.textContent = 'Cantidad';
+          labelQty.setAttribute('for', 'qty-' + q.id);
+          form.appendChild(labelQty);
+
+          const inputQty = document.createElement('input');
+          inputQty.type = 'number';
+          inputQty.min = '1';
+          inputQty.step = '1';
+          inputQty.id = 'qty-' + q.id;
+          inputQty.placeholder = 'Cantidad';
+          inputQty.required = true;
+          inputQty.style.marginBottom = '0.4rem';
+          form.appendChild(inputQty);
+
+          // Comments input
+          const labelComments = document.createElement('label');
+          labelComments.textContent = 'Comentarios para el cliente';
+          labelComments.setAttribute('for', 'com-' + q.id);
+          form.appendChild(labelComments);
+
+          const textareaC = document.createElement('textarea');
+          textareaC.id = 'com-' + q.id;
+          textareaC.rows = 2;
+          textareaC.placeholder = 'Comentarios...';
+          form.appendChild(textareaC);
+
+          // Submit button
+          const btnSend = document.createElement('button');
+          btnSend.type = 'submit';
+          btnSend.classList.add('primary');
+          btnSend.textContent = 'Enviar cotización';
+          form.appendChild(btnSend);
+
+          form.onsubmit = e => {
+            e.preventDefault();
+            const puVal = parseFloat(inputPU.value);
+            const qtyVal = parseInt(inputQty.value, 10);
+            if(isNaN(puVal) || puVal <= 0) {
+              alert('Por favor, ingresa un precio por unidad válido');
+              return;
+            }
+            if(isNaN(qtyVal) || qtyVal < 1) {
+              alert('Por favor, ingresa una cantidad válida');
+              return;
+            }
+            q.pricePerUnit = puVal;
+            q.quantity = qtyVal;
+            q.comments = textareaC.value.trim() || null;
+            // Status remains pending until client approves
+            saveQuotes(quotes);
+            alert('Cotización enviada al cliente para aprobación');
+            renderQuotations();
+          };
+
+          item.appendChild(form);
+        } else if(q.status === 'pending') {
+          // Buttons to approve/reject for company convenience (optional)
+          const btnRow = document.createElement('div');
+          btnRow.classList.add('buttons-row');
+
+          const approveBtn = document.createElement('button');
+          approveBtn.classList.add('primary');
+          approveBtn.textContent = 'Aprobar';
+          approveBtn.onclick = () => {
+            q.status = 'approved';
+            saveQuotes(quotes);
+            renderQuotations();
+            renderOrders();
+          };
+
+          const rejectBtn = document.createElement('button');
+          rejectBtn.classList.add('secondary');
+          rejectBtn.textContent = 'Rechazar';
+          rejectBtn.onclick = () => {
+            q.status = 'rejected';
+            saveQuotes(quotes);
+            renderQuotations();
+          };
+
+          btnRow.appendChild(approveBtn);
+          btnRow.appendChild(rejectBtn);
+
+          item.appendChild(btnRow);
+        }
+
+        companyQuotationsList.appendChild(item);
+      });
+    }
+
+    // Render orders list
+    function renderOrders() {
+      const orders = loadData(STORAGE_KEYS.ORDERS);
+      const quotes = loadData(STORAGE_KEYS.QUOTATIONS);
+      const clients = loadData(STORAGE_KEYS.CLIENTS);
+
+      if(orders.length === 0) {
+        companyOrdersList.innerHTML = '<p>No hay pedidos activos.</p>';
+        return;
+      }
+
+      companyOrdersList.innerHTML = '';
+
+      orders.forEach(order => {
+        const quote = quotes.find(q => q.id === order.quoteId);
+        const client = clients.find(c => c.id === order.clientId);
+
+        const item = document.createElement('div');
+        item.classList.add('item');
+
+        // Header with order ID and status
+        const header = document.createElement('div');
+        header.classList.add('item-header');
+
+        const title = document.createElement('h3');
+        title.textContent = `Pedido #${order.id.substr(-5)} - ${client ? client.name : 'Cliente Desconocido'}`;
+
+        const statusTag = document.createElement('span');
+        statusTag.classList.add('tag');
+        statusTag.textContent = order.status.toUpperCase().replace('_', ' ');
+        switch(order.status) {
+          case 'in-production': statusTag.classList.add('in-production'); break;
+          case 'finished': statusTag.classList.add('finished'); break;
+          case 'ready': statusTag.classList.add('ready'); break;
+          default: statusTag.classList.add('in-production');
+        }
+
+        header.appendChild(title);
+        header.appendChild(statusTag);
+        item.appendChild(header);
+
+        // Quote info
+        if(quote) {
+          const descP = document.createElement('p');
+          descP.textContent = `Cotización asociada: ${quote.description}`;
+          item.appendChild(descP);
+
+          if(quote.pricePerUnit !== null && quote.quantity !== null) {
+            const prices = calculatePrices(quote.pricePerUnit, quote.quantity);
+            const pricesP = document.createElement('p');
+            pricesP.innerHTML =
+              `Precio por unidad: $${quote.pricePerUnit.toFixed(2)}<br>` +
+              `Cantidad: ${quote.quantity}<br>` +
+              `Subtotal: $${prices.subTotal.toFixed(2)}<br>` +
+              `IVA (18%): $${prices.taxAmount.toFixed(2)}<br>` +
+              `<strong>Total: $${prices.total.toFixed(2)}</strong>`;
+            pricesP.style.fontWeight = '700';
+            item.appendChild(pricesP);
+          }
+        }
+
+        // Form to update order status and estimated completion
+        const form = document.createElement('form');
+        form.style.marginTop = '0.5rem';
+
+        const labelStatus = document.createElement('label');
+        labelStatus.textContent = 'Estado del pedido';
+        labelStatus.setAttribute('for', 'status-' + order.id);
+        form.appendChild(labelStatus);
+
+        const selectStatus = document.createElement('select');
+        selectStatus.id = 'status-' + order.id;
+        ['in-production', 'finished', 'ready'].forEach(st => {
+          const opt = document.createElement('option');
+          opt.value = st;
+          opt.textContent = st.charAt(0).toUpperCase() + st.slice(1).replace('-', ' ');
+          if(order.status === st) opt.selected = true;
+          selectStatus.appendChild(opt);
+        });
+        form.appendChild(selectStatus);
+
+        const labelDate = document.createElement('label');
+        labelDate.textContent = 'Fecha estimada de finalización';
+        labelDate.style.marginTop = '0.5rem';
+        labelDate.setAttribute('for', 'date-' + order.id);
+        form.appendChild(labelDate);
+
+        const inputDate = document.createElement('input');
+        inputDate.type = 'date';
+        inputDate.id = 'date-' + order.id;
+        inputDate.value = order.estimatedCompletion || '';
+        inputDate.style.marginBottom = '0.5rem';
+        form.appendChild(inputDate);
+
+        const btnSave = document.createElement('button');
+        btnSave.type = 'submit';
+        btnSave.classList.add('primary');
+        btnSave.textContent = 'Guardar cambios';
+        form.appendChild(btnSave);
+
+        form.addEventListener('submit', evt => {
+          evt.preventDefault();
+          order.status = selectStatus.value;
+          order.estimatedCompletion = inputDate.value || null;
+
+          saveOrders(orders);
+          renderOrders();
+
+          alert(`Estado del pedido actualizado a "${order.status.replace('_', ' ')}"`);
+        });
+
+        item.appendChild(form);
+
+        companyOrdersList.appendChild(item);
+      });
+    }
+
+    // Save updated quotations to localStorage
+    function saveQuotes(quotes) {
+      saveData(STORAGE_KEYS.QUOTATIONS, quotes);
+    }
+
+    // Save updated orders to localStorage
+    function saveOrders(orders) {
+      saveData(STORAGE_KEYS.ORDERS, orders);
+    }
+
+    // Initialize app
+    function init() {
+      renderQuotations();
+      renderOrders();
+    }
+
+    init();
+  })();
+</script>
+</body>
+</html>
