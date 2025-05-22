@@ -1,12 +1,1435 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Front Page</title>
-
-</head>    
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestión de Cotizaciones y Pedidos</title>
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    crossorigin="anonymous"
+  />
+  <style>
+    body {
+      background: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+    .container {
+      max-width: 1100px;
+      margin-top: 20px;
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    .nav-tabs .nav-link.active {
+      background-color: #0d6efd !important;
+      color: white !important;
+    }
+    .file-list {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    .file-list li {
+      background: #e9ecef;
+      border-radius: 4px;
+      padding: 4px 8px;
+      margin-bottom: 4px;
+      font-size: 0.9rem;
+    }
+    .badge-status {
+      font-weight: 600;
+    }
+    .toast-container {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 1080;
+    }
+    .form-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+    }
+    .comment-box {
+      resize: vertical;
+    }
+    /* Scrollable messages panel for company */
+    #companyMessages {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 10px;
+      background: #f1f3f5;
+    }
+    #companyMessages .message {
+      margin-bottom: 10px;
+      padding: 6px 10px;
+      border-radius: 4px;
+    }
+    #companyMessages .message.client {
+      background-color: #d1e7dd;
+      align-self: flex-start;
+    }
+    #companyMessages .message.company {
+      background-color: #cfe2ff;
+      align-self: flex-end;
+    }
+    /* Responsive breakpoint */
+    @media (max-width: 576px) {
+      .nav-tabs {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
 <body>
-    <p><a href="code.html">Go to Page</a></p>
+  <div class="container">
+    <h1 class="text-center mt-3 mb-4">Gestión de Cotizaciones y Pedidos</h1>
+    <ul class="nav nav-tabs" id="roleTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button
+          class="nav-link active"
+          id="client-tab"
+          data-bs-toggle="tab"
+          data-bs-target="#client"
+          type="button"
+          role="tab"
+          aria-controls="client"
+          aria-selected="true"
+        >
+          Cliente
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button
+          class="nav-link"
+          id="company-tab"
+          data-bs-toggle="tab"
+          data-bs-target="#company"
+          type="button"
+          role="tab"
+          aria-controls="company"
+          aria-selected="false"
+        >
+          Empresa
+        </button>
+      </li>
+    </ul>
+    <div class="tab-content mt-4" id="roleTabContent">
+      <!-- CLIENTE VIEW -->
+      <div
+        class="tab-pane fade show active"
+        id="client"
+        role="tabpanel"
+        aria-labelledby="client-tab"
+      >
+        <ul class="nav nav-pills mb-3" id="clientSubTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button
+              class="nav-link active"
+              id="quoteRequest-tab"
+              data-bs-toggle="pill"
+              data-bs-target="#quoteRequest"
+              type="button"
+              role="tab"
+              aria-controls="quoteRequest"
+              aria-selected="true"
+            >
+              Solicitar Cotización
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button
+              class="nav-link"
+              id="myQuotes-tab"
+              data-bs-toggle="pill"
+              data-bs-target="#myQuotes"
+              type="button"
+              role="tab"
+              aria-controls="myQuotes"
+              aria-selected="false"
+            >
+              Mis Cotizaciones y Pedidos
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button
+              class="nav-link"
+              id="profile-tab"
+              data-bs-toggle="pill"
+              data-bs-target="#profile"
+              type="button"
+              role="tab"
+              aria-controls="profile"
+              aria-selected="false"
+            >
+              Perfil
+            </button>
+          </li>
+        </ul>
+        <div class="tab-content" id="clientSubTabContent">
+          <!-- Solicitar Cotización -->
+          <div
+            class="tab-pane fade show active form-section"
+            id="quoteRequest"
+            role="tabpanel"
+            aria-labelledby="quoteRequest-tab"
+          >
+            <h2>Solicitar Cotización</h2>
+            <form id="formQuoteRequest" novalidate>
+              <div class="mb-3">
+                <label for="description" class="form-label"
+                  >Descripción del trabajo/producto<span class="text-danger">*</span></label
+                >
+                <textarea
+                  class="form-control"
+                  id="description"
+                  name="description"
+                  rows="3"
+                  required
+                  placeholder="Describa el trabajo o producto deseado"
+                ></textarea>
+                <div class="invalid-feedback">La descripción es obligatoria.</div>
+              </div>
+              <div class="mb-3">
+                <label for="files" class="form-label">Archivos adjuntos</label>
+                <input
+                  class="form-control"
+                  type="file"
+                  id="files"
+                  name="files"
+                  multiple
+                  accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                />
+                <small class="form-text text-muted"
+                  >Formatos permitidos: imágenes, documentos.</small
+                >
+                <ul id="fileList" class="file-list mt-2"></ul>
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                  <label for="quantity" class="form-label"
+                    >Cantidad<span class="text-danger">*</span></label
+                  >
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="quantity"
+                    name="quantity"
+                    min="1"
+                    required
+                  />
+                  <div class="invalid-feedback">Cantidad válida requerida.</div>
+                </div>
+                <div class="col-md-4">
+                  <label for="measurements" class="form-label">Medidas</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="measurements"
+                    name="measurements"
+                    placeholder="Ej: 20x30 cm"
+                  />
+                </div>
+                <div class="col-md-4">
+                  <label for="material" class="form-label">Material</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="material"
+                    name="material"
+                    placeholder="Ej: Madera, acero"
+                  />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="deadline" class="form-label">Fecha límite</label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="deadline"
+                  name="deadline"
+                  min=""
+                />
+              </div>
+              <h4>Información de contacto</h4>
+              <div class="mb-3">
+                <label for="clientName" class="form-label"
+                  >Nombre completo<span class="text-danger">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="clientName"
+                  name="clientName"
+                  required
+                />
+                <div class="invalid-feedback">El nombre es obligatorio.</div>
+              </div>
+              <div class="mb-3">
+                <label for="clientPhone" class="form-label"
+                  >Teléfono<span class="text-danger">*</span></label
+                >
+                <input
+                  type="tel"
+                  class="form-control"
+                  id="clientPhone"
+                  name="clientPhone"
+                  required
+                  pattern="[\d\s\+\-]{6,20}"
+                  placeholder="+54 11 1234-5678"
+                />
+                <div class="invalid-feedback">
+                  Teléfono válido es obligatorio (6 a 20 dígitos).
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="clientEmail" class="form-label"
+                  >Correo electrónico<span class="text-danger">*</span></label
+                >
+                <input
+                  type="email"
+                  class="form-control"
+                  id="clientEmail"
+                  name="clientEmail"
+                  required
+                />
+                <div class="invalid-feedback">Correo válido obligatorio.</div>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                Enviar Solicitud
+              </button>
+            </form>
+          </div>
 
+          <!-- Mis Cotizaciones y Pedidos -->
+          <div
+            class="tab-pane fade form-section"
+            id="myQuotes"
+            role="tabpanel"
+            aria-labelledby="myQuotes-tab"
+          >
+            <h2>Mis Cotizaciones y Pedidos</h2>
+            <div id="clientQuotesContainer">
+              <!-- Quotes and Orders list rendered here -->
+            </div>
+          </div>
+
+          <!-- Perfil -->
+          <div
+            class="tab-pane fade form-section"
+            id="profile"
+            role="tabpanel"
+            aria-labelledby="profile-tab"
+          >
+            <h2>Perfil de Usuario</h2>
+            <form id="formProfile" novalidate>
+              <div class="mb-3">
+                <label for="profileName" class="form-label"
+                  >Nombre completo<span class="text-danger">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="profileName"
+                  name="profileName"
+                  required
+                />
+                <div class="invalid-feedback">El nombre es obligatorio.</div>
+              </div>
+              <div class="mb-3">
+                <label for="profilePhone" class="form-label"
+                  >Teléfono<span class="text-danger">*</span></label
+                >
+                <input
+                  type="tel"
+                  class="form-control"
+                  id="profilePhone"
+                  name="profilePhone"
+                  required
+                  pattern="[\d\s\+\-]{6,20}"
+                />
+                <div class="invalid-feedback">
+                  Teléfono válido es obligatorio (6 a 20 dígitos).
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="profileEmail" class="form-label"
+                  >Correo electrónico<span class="text-danger">*</span></label
+                >
+                <input
+                  type="email"
+                  class="form-control"
+                  id="profileEmail"
+                  name="profileEmail"
+                  required
+                />
+                <div class="invalid-feedback">Correo válido obligatorio.</div>
+              </div>
+              <button type="submit" class="btn btn-success">
+                Guardar Cambios
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- EMPRESA VIEW -->
+      <div
+        class="tab-pane fade"
+        id="company"
+        role="tabpanel"
+        aria-labelledby="company-tab"
+      >
+        <ul class="nav nav-pills mb-3" id="companySubTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button
+              class="nav-link active"
+              id="manageQuotes-tab"
+              data-bs-toggle="pill"
+              data-bs-target="#manageQuotes"
+              type="button"
+              role="tab"
+              aria-controls="manageQuotes"
+              aria-selected="true"
+            >
+              Gestionar Cotizaciones
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button
+              class="nav-link"
+              id="manageOrders-tab"
+              data-bs-toggle="pill"
+              data-bs-target="#manageOrders"
+              type="button"
+              role="tab"
+              aria-controls="manageOrders"
+              aria-selected="false"
+            >
+              Gestión de Pedidos
+            </button>
+          </li>
+        </ul>
+        <div class="tab-content" id="companySubTabContent">
+          <!-- Gestionar Cotizaciones -->
+          <div
+            class="tab-pane fade show active form-section"
+            id="manageQuotes"
+            role="tabpanel"
+            aria-labelledby="manageQuotes-tab"
+          >
+            <h2>Gestionar Cotizaciones</h2>
+            <div id="companyQuotesList" class="list-group mb-3">
+              <!-- List of quotes here -->
+            </div>
+            <div id="companyQuoteDetail" style="display:none;">
+              <h4>Detalle de Cotización</h4>
+              <div id="quoteDetailContent" class="mb-3"></div>
+              <form id="formSendQuote" novalidate>
+                <div class="mb-3">
+                  <label for="quoteDescription" class="form-label"
+                    >Descripción de Servicios/Productoss<span class="text-danger">*</span></label
+                  >
+                  <textarea
+                    id="quoteDescription"
+                    class="form-control"
+                    rows="3"
+                    required
+                  ></textarea>
+                  <div class="invalid-feedback">
+                    La descripción de la cotización es obligatoria.
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label for="unitPrice" class="form-label"
+                    >Precio unitario<span class="text-danger">*</span></label
+                  >
+                  <input
+                    type="number"
+                    id="unitPrice"
+                    class="form-control"
+                    min="0"
+                    step="any"
+                    required
+                  />
+                  <div class="invalid-feedback">Precio válido obligatorio.</div>
+                </div>
+                <div class="mb-3">
+                  <label for="discount" class="form-label">Descuento (%)</label>
+                  <input
+                    type="number"
+                    id="discount"
+                    class="form-control"
+                    min="0"
+                    max="100"
+                    step="any"
+                    value="0"
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="tax" class="form-label">Impuestos (%)</label>
+                  <input
+                    type="number"
+                    id="tax"
+                    class="form-control"
+                    min="0"
+                    max="100"
+                    step="any"
+                    value="0"
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="pdfFile" class="form-label">Adjuntar PDF</label>
+                  <input
+                    type="file"
+                    id="pdfFile"
+                    accept="application/pdf"
+                    class="form-control"
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="quoteComments" class="form-label">
+                    Comentarios para el cliente
+                  </label>
+                  <textarea id="quoteComments" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="mb-3">
+                  <label for="quoteStatus" class="form-label">Estado de la cotización</label>
+                  <select id="quoteStatus" class="form-select">
+                    <option value="enviada">Enviada</option>
+                    <option value="aprobada">Aprobada</option>
+                    <option value="rechazada">Rechazada</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary me-2">Guardar</button>
+                <button type="button" id="btnBackToQuotes" class="btn btn-secondary">
+                  Volver a Cotizaciones
+                </button>
+              </form>
+              <hr />
+              <h5>Mensajería con el cliente</h5>
+              <div id="companyMessages" class="d-flex flex-column mb-3"></div>
+              <form id="formCompanyMessage">
+                <div class="input-group">
+                  <input
+                    type="text"
+                    id="messageInput"
+                    class="form-control"
+                    placeholder="Escribe un mensaje..."
+                    required
+                  />
+                  <button class="btn btn-outline-primary" type="submit">Enviar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Gestión de Pedidos -->
+          <div
+            class="tab-pane fade form-section"
+            id="manageOrders"
+            role="tabpanel"
+            aria-labelledby="manageOrders-tab"
+          >
+            <h2>Gestión de Pedidos</h2>
+            <div id="companyOrdersList" class="list-group mb-3">
+              <!-- List of orders here -->
+            </div>
+            <div id="companyOrderDetail" style="display:none;">
+              <h4>Detalle de Pedido</h4>
+              <div id="orderDetailContent" class="mb-3"></div>
+              <form id="formUpdateOrder" novalidate>
+                <div class="mb-3">
+                  <label for="orderStatus" class="form-label">Estado del pedido</label>
+                  <select id="orderStatus" class="form-select">
+                    <option value="pendiente">Pendiente de aprobación</option>
+                    <option value="en_produccion">En producción</option>
+                    <option value="listo_para_recoger">Listo para recoger</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="responsible" class="form-label">Responsable</label>
+                  <input
+                    type="text"
+                    id="responsible"
+                    class="form-control"
+                    placeholder="Asignar responsable"
+                  />
+                </div>
+                <button type="submit" class="btn btn-primary me-2">Actualizar</button>
+                <button type="button" id="btnBackToOrders" class="btn btn-secondary">
+                  Volver a Pedidos
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container for notifications -->
+  <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+  <!-- Bootstrap Bundle JS (includes Popper) -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    crossorigin="anonymous"
+  ></script>
+
+  <script>
+    (() => {
+      // Data stores in localStorage keys
+      const LS_PROFILE = 'user_profile';
+      const LS_QUOTES = 'quotes_data';
+      const LS_ORDERS = 'orders_data';
+      const LS_MESSAGES = 'messages_data';
+
+      // Utility to show toast notifications
+      function showToast(message, type = 'info', delay = 3000) {
+        const toastContainer = document.getElementById('toastContainer');
+        const toastId = 'toast-' + Date.now();
+        const toastElem = document.createElement('div');
+        toastElem.classList.add('toast', 'align-items-center', 'text-bg-' + (type === 'error' ? 'danger' : type), 'border-0');
+        toastElem.id = toastId;
+        toastElem.setAttribute('role', 'alert');
+        toastElem.setAttribute('aria-live', 'assertive');
+        toastElem.setAttribute('aria-atomic', 'true');
+        toastElem.innerHTML = \`
+          <div class="d-flex">
+            <div class="toast-body">\${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        \`;
+        toastContainer.appendChild(toastElem);
+        const bsToast = new bootstrap.Toast(toastElem, { delay });
+        bsToast.show();
+        toastElem.addEventListener('hidden.bs.toast', () => {
+          toastElem.remove();
+        });
+      }
+
+      // Date Min for deadline inputs: today
+      function setMinDateForDeadlines() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('deadline').setAttribute('min', today);
+      }
+
+      // Load profile info from localStorage or default
+      function loadProfile() {
+        const data = localStorage.getItem(LS_PROFILE);
+        if (data) {
+          try {
+            const profile = JSON.parse(data);
+            return profile;
+          } catch {
+            return null;
+          }
+        }
+        return null;
+      }
+
+      // Save profile info to localStorage
+      function saveProfile(profile) {
+        localStorage.setItem(LS_PROFILE, JSON.stringify(profile));
+      }
+
+      // Initialize profile form with saved data
+      function populateProfileForm() {
+        const profile = loadProfile();
+        if (profile) {
+          document.getElementById('profileName').value = profile.name || '';
+          document.getElementById('profilePhone').value = profile.phone || '';
+          document.getElementById('profileEmail').value = profile.email || '';
+          // Also populate client info in quote form for convenience
+          document.getElementById('clientName').value = profile.name || '';
+          document.getElementById('clientPhone').value = profile.phone || '';
+          document.getElementById('clientEmail').value = profile.email || '';
+        }
+      }
+
+      // Quotes and Orders management (mock backend with localStorage)
+      // Quote structure example:
+      /*
+        {
+          id: string,
+          description: string,
+          files: [{name:string}],
+          quantity: number,
+          measurements: string,
+          material: string,
+          deadline: string (yyyy-mm-dd),
+          client: {name, phone, email},
+          status: 'pendiente' | 'enviada' | 'aprobada' | 'rechazada',
+          quoteDetails: { description, unitPrice, discount, tax, pdfFileName, comments },
+          order: { status, responsible, estimatedCompletionDate, pickupInfo },
+          messages: [{from:'client'|'company', text:string, timestamp:number}],
+          createdAt: number (timestamp)
+        }
+      */
+
+      // Generate unique ID
+      function generateId() {
+        return 'id_' + Math.random().toString(36).substr(2, 9);
+      }
+
+      // Load quotes from storage
+      function loadQuotes() {
+        const data = localStorage.getItem(LS_QUOTES);
+        if (data) {
+          try {
+            return JSON.parse(data);
+          } catch {
+            return [];
+          }
+        }
+        return [];
+      }
+
+      // Save quotes to storage
+      function saveQuotes(quotes) {
+        localStorage.setItem(LS_QUOTES, JSON.stringify(quotes));
+      }
+
+      // Load orders from storage
+      function loadOrders() {
+        const data = localStorage.getItem(LS_ORDERS);
+        if (data) {
+          try {
+            return JSON.parse(data);
+          } catch {
+            return [];
+          }
+        }
+        return [];
+      }
+
+      // Save orders to storage
+      function saveOrders(orders) {
+        localStorage.setItem(LS_ORDERS, JSON.stringify(orders));
+      }
+
+      // Add a new quote request
+      function addNewQuote(quoteData) {
+        const quotes = loadQuotes();
+        quotes.push(quoteData);
+        saveQuotes(quotes);
+      }
+
+      // Find a quote by id
+      function findQuoteById(id) {
+        const quotes = loadQuotes();
+        return quotes.find((q) => q.id === id);
+      }
+
+      // Update a quote by id
+      function updateQuote(updatedQuote) {
+        let quotes = loadQuotes();
+        quotes = quotes.map((q) => (q.id === updatedQuote.id ? updatedQuote : q));
+        saveQuotes(quotes);
+      }
+
+      // Add message to a quote conversation
+      function addMessageToQuote(quoteId, from, text) {
+        const quote = findQuoteById(quoteId);
+        if (!quote.messages) quote.messages = [];
+        quote.messages.push({ from, text, timestamp: Date.now() });
+        updateQuote(quote);
+      }
+
+      // Utility: format date yyyy-mm-dd to local date string dd/mm/yyyy
+      function formatDate(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        if (isNaN(date)) return dateStr;
+        return date.toLocaleDateString('es-ES');
+      }
+
+      // Calculate total price based on quote details and quantity
+      function calculateTotal(quoteDetails, quantity) {
+        if (!quoteDetails || quantity <= 0) return 0;
+        let price = quoteDetails.unitPrice || 0;
+        let discount = quoteDetails.discount || 0;
+        let tax = quoteDetails.tax || 0;
+        let subtotal = price * quantity;
+        let discountAmt = (subtotal * discount) / 100;
+        let taxedAmt = ((subtotal - discountAmt) * tax) / 100;
+        return subtotal - discountAmt + taxedAmt;
+      }
+
+      // ----- CLIENT SIDE LOGIC -----
+
+      // Handle file input for quote request form display file list
+      function handleFilesInput(event) {
+        const fileListElem = document.getElementById('fileList');
+        fileListElem.innerHTML = '';
+        const files = event.target.files;
+        for (let i = 0; i < files.length; i++) {
+          const li = document.createElement('li');
+          li.textContent = files[i].name;
+          fileListElem.appendChild(li);
+        }
+      }
+
+      // Handle quote request form submission
+      function handleQuoteRequestSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+
+        // Validate form
+        if (!form.checkValidity()) {
+          form.classList.add('was-validated');
+          return;
+        }
+        const description = form.description.value.trim();
+        const quantity = parseInt(form.quantity.value);
+        const measurements = form.measurements.value.trim();
+        const material = form.material.value.trim();
+        const deadline = form.deadline.value;
+        const filesInput = form.files;
+        const clientName = form.clientName.value.trim();
+        const clientPhone = form.clientPhone.value.trim();
+        const clientEmail = form.clientEmail.value.trim();
+
+        // Store attached file names (mocked as local file references)
+        const attachedFiles = [];
+        for (let i = 0; i < filesInput.files.length; i++) {
+          attachedFiles.push({ name: filesInput.files[i].name });
+        }
+
+        // Create quote object
+        const newQuote = {
+          id: generateId(),
+          description,
+          files: attachedFiles,
+          quantity,
+          measurements,
+          material,
+          deadline,
+          client: { name: clientName, phone: clientPhone, email: clientEmail },
+          status: 'pendiente',
+          quoteDetails: null,
+          order: null,
+          messages: [],
+          createdAt: Date.now(),
+        };
+
+        addNewQuote(newQuote);
+
+        showToast('Solicitud de cotización enviada con éxito.', 'success');
+
+        form.reset();
+        document.getElementById('fileList').innerHTML = '';
+        form.classList.remove('was-validated');
+        // Refresh quotes/orders list
+        renderClientQuotes();
+      }
+
+      // Render client's quotes and orders list
+      function renderClientQuotes() {
+        const container = document.getElementById('clientQuotesContainer');
+        container.innerHTML = '';
+        const profile = loadProfile();
+        if (!profile || !profile.email) {
+          container.innerHTML = '<div class="alert alert-warning">Por favor, complete su perfil para ver sus cotizaciones y pedidos.</div>';
+          return;
+        }
+        const quotes = loadQuotes().filter((q) => q.client.email === profile.email);
+
+        if (!quotes.length) {
+          container.innerHTML = '<div class="alert alert-info">No hay cotizaciones o pedidos aún.</div>';
+          return;
+        }
+
+        const listGroup = document.createElement('div');
+        listGroup.classList.add('list-group');
+
+        quotes.sort((a,b) => b.createdAt - a.createdAt).forEach((quote) => {
+          const item = document.createElement('div');
+          item.classList.add('list-group-item', 'mb-2', 'rounded');
+
+          const statusColors = {
+            pendiente: 'secondary',
+            enviada: 'primary',
+            aprobada: 'success',
+            rechazada: 'danger',
+          };
+          const orderStatusColors = {
+            pendiente: 'secondary',
+            en_produccion: 'warning',
+            listo_para_recoger: 'success',
+          };
+
+          const quoteStatus = quote.status || 'pendiente';
+          const orderStatus = (quote.order && quote.order.status) || null;
+          let totalPrice = 0;
+          if (quote.quoteDetails && quote.status === 'aprobada') {
+            totalPrice = calculateTotal(quote.quoteDetails, quote.quantity);
+          }
+
+          item.innerHTML = \`
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>Descripción:</strong> \${quote.description.substring(0, 80)}\${quote.description.length > 80 ? '...' : ''}
+                <br/>
+                <small><strong>Solicitada el:</strong> \${new Date(quote.createdAt).toLocaleDateString('es-ES')}</small>
+              </div>
+              <div>
+                <span class="badge bg-\${statusColors[quoteStatus] || 'secondary'} badge-status text-uppercase me-2">
+                  \${quoteStatus.replace('_',' ')}
+                </span>
+                \${orderStatus ? \`<span class="badge bg-\${orderStatusColors[orderStatus] || 'secondary'} badge-status text-uppercase">Estado Pedido: \${orderStatus.replace('_',' ')}</span>\` : ''}
+              </div>
+            </div>
+            <div class="mt-2">
+              <button class="btn btn-sm btn-outline-primary me-2" data-action="viewDetails" data-id="\${quote.id}">Ver Detalles</button>
+              \${quoteStatus === 'enviada' ? '<button class="btn btn-sm btn-success" data-action="approve" data-id="' + quote.id + '">Aprobar</button>' : ''}
+              \${quoteStatus === 'enviada' ? '<button class="btn btn-sm btn-danger ms-2" data-action="reject" data-id="' + quote.id + '">Rechazar</button>' : ''}
+            </div>
+          \`;
+
+          listGroup.appendChild(item);
+
+          // Add event listeners after adding to DOM
+          item.querySelectorAll('button').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+              const action = e.target.getAttribute('data-action');
+              const id = e.target.getAttribute('data-id');
+              if (action === 'viewDetails') {
+                openQuoteDetailModal(id);
+              } else if (action === 'approve') {
+                updateQuoteStatus(id, 'aprobada');
+              } else if (action === 'reject') {
+                updateQuoteStatus(id, 'rechazada');
+              }
+            });
+          });
+        });
+
+        container.appendChild(listGroup);
+      }
+
+      // Show quote detail modal replacement (simplified alert for now)
+      function openQuoteDetailModal(quoteId) {
+        const quote = findQuoteById(quoteId);
+        if (!quote) {
+          showToast('Cotización no encontrada.', 'error');
+          return;
+        }
+        let details = \`
+          <p><strong>Descripción:</strong> \${quote.description}</p>
+          <p><strong>Cantidad:</strong> \${quote.quantity}</p>
+          <p><strong>Medidas:</strong> \${quote.measurements || '-'}</p>
+          <p><strong>Material:</strong> \${quote.material || '-'}</p>
+          <p><strong>Fecha límite:</strong> \${formatDate(quote.deadline) || '-'}</p>
+          <p><strong>Estado:</strong> \${quote.status}</p>
+        \`;
+
+        if (quote.files && quote.files.length > 0) {
+          details += '<p><strong>Archivos adjuntos:</strong><ul>';
+          quote.files.forEach(f => {
+            details += \`<li>\${f.name}</li>\`;
+          });
+          details += '</ul></p>';
+        }
+
+        if (quote.quoteDetails) {
+          const qd = quote.quoteDetails;
+          const totalPrice = calculateTotal(qd, quote.quantity);
+          details += \`
+            <hr/>
+            <h5>Detalles de la Cotización</h5>
+            <p><strong>Descripción:</strong> \${qd.description}</p>
+            <p><strong>Precio unitario:</strong> \$\${qd.unitPrice.toFixed(2)}</p>
+            <p><strong>Descuento:</strong> \${qd.discount}%</p>
+            <p><strong>Impuestos:</strong> \${qd.tax}%</p>
+            <p><strong>Total a pagar:</strong> \$\${totalPrice.toFixed(2)}</p>
+            <p><strong>Comentarios:</strong> \${qd.comments || '-'}</p>
+            \${qd.pdfFileName ? \`<p><strong>PDF adjunto:</strong> \${qd.pdfFileName}</p>\` : ''}
+          \`;
+        }
+
+        if (quote.order) {
+          details += \`
+            <hr/>
+            <h5>Estado del Pedido</h5>
+            <p><strong>Estado:</strong> \${quote.order.status}</p>
+            <p><strong>Responsable:</strong> \${quote.order.responsible || '-'}</p>
+            <p><strong>Fecha estimada de finalización:</strong> \${quote.order.estimatedCompletionDate ? formatDate(quote.order.estimatedCompletionDate) : '-'}</p>
+            <p><strong>Información de recogida:</strong> \${quote.order.pickupInfo || '-'}</p>
+          \`;
+        }
+
+        // Add messaging section for client if quote status is enviada or aprobada
+        details += '<hr/><h5>Mensajes</h5>';
+        details += '<div style="max-height:200px; overflow-y:auto; border:1px solid #ccc; border-radius:4px; padding:8px;">';
+        if (quote.messages && quote.messages.length > 0) {
+          quote.messages.forEach((m) => {
+            const sender = m.from === 'client' ? 'Tú' : 'Empresa';
+            details += \`
+              <div style="margin-bottom:6px;">
+                <strong>\${sender}:</strong> \${m.text} <br/>
+                <small style="color:#666;">\${new Date(m.timestamp).toLocaleString('es-ES')}</small>
+              </div>
+            \`;
+          });
+        } else {
+          details += '<em>No hay mensajes.</em>';
+        }
+        details += '</div>';
+
+        details += \`
+          <form id="formClientMessage" class="mt-2">
+            <div class="input-group">
+              <input type="text" class="form-control" id="clientMessageInput" placeholder="Escribe un mensaje..." required />
+              <button class="btn btn-primary" type="submit">Enviar</button>
+            </div>
+          </form>
+        \`;
+
+        // Display in a Bootstrap modal or alert fallback
+        showModal('Detalle Cotización y Pedido', details, () => {
+          // Attach message submit handler
+          const formMsg = document.getElementById('formClientMessage');
+          const inputMsg = document.getElementById('clientMessageInput');
+          formMsg.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const msgText = inputMsg.value.trim();
+            if (!msgText) return;
+            addMessageToQuote(quoteId, 'client', msgText);
+            showToast('Mensaje enviado.');
+            inputMsg.value = '';
+            // Reopen detail modal to refresh messages
+            document.querySelector('.modal').remove();
+            openQuoteDetailModal(quoteId);
+          });
+        });
+      }
+
+      // Bootstrap modal helper function
+      function showModal(title, bodyHTML, afterShowCallback) {
+        // Remove any existing modal
+        const existingModal = document.querySelector('.modal');
+        if (existingModal) existingModal.remove();
+
+        const modalId = 'modal' + Date.now();
+        const modalHTML = \`
+          <div class="modal fade show" tabindex="-1" style="display:block; background-color: rgba(0,0,0,0.5);" aria-modal="true" role="dialog" id="\${modalId}">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">\${title}</h5>
+                  <button type="button" class="btn-close" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">\${bodyHTML}</div>
+              </div>
+            </div>
+          </div>
+        \`;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        const modalElem = document.getElementById(modalId);
+        // Close modal on close button or backdrop click
+        modalElem.querySelector('.btn-close').addEventListener('click', () => {
+          modalElem.remove();
+        });
+        modalElem.addEventListener('click', (e) => {
+          if (e.target === modalElem) modalElem.remove();
+        });
+
+        if (afterShowCallback) afterShowCallback();
+      }
+
+      // Approve or reject quote update
+      function updateQuoteStatus(quoteId, status) {
+        const quote = findQuoteById(quoteId);
+        if (!quote) {
+          showToast('Cotización no encontrada.', 'error');
+          return;
+        }
+        quote.status = status;
+        if (status === 'aprobada' && !quote.order) {
+          // Create order as empty for approved quotes
+          quote.order = {
+            status: 'pendiente',
+            responsible: '',
+            estimatedCompletionDate: '',
+            pickupInfo: '',
+          };
+        }
+        updateQuote(quote);
+        showToast('Estado de la cotización actualizado a "' + status + '".', 'success');
+        renderClientQuotes();
+      }
+
+      // Handle profile form submit
+      function handleProfileSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+        if (!form.checkValidity()) {
+          form.classList.add('was-validated');
+          return;
+        }
+        const profile = {
+          name: form.profileName.value.trim(),
+          phone: form.profilePhone.value.trim(),
+          email: form.profileEmail.value.trim(),
+        };
+        saveProfile(profile);
+        showToast('Perfil guardado correctamente.', 'success');
+        form.classList.remove('was-validated');
+        populateProfileForm();
+      }
+
+      // ----- COMPANY SIDE LOGIC -----
+
+      // Render quote list on company panel
+      function renderCompanyQuotes() {
+        const container = document.getElementById('companyQuotesList');
+        container.innerHTML = '';
+        const quotes = loadQuotes();
+
+        if (!quotes.length) {
+          container.innerHTML = '<div class="alert alert-info">No hay solicitudes de cotización.</div>';
+          return;
+        }
+
+        quotes.sort((a,b) => b.createdAt - a.createdAt).forEach((quote) => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.classList.add('list-group-item', 'list-group-item-action');
+          if (quote.status === 'aprobada') {
+            item.classList.add('list-group-item-success');
+          } else if (quote.status === 'rechazada') {
+            item.classList.add('list-group-item-danger');
+          } else if (quote.status === 'enviada') {
+            item.classList.add('list-group-item-primary');
+          }
+          item.textContent = \`[\${quote.status.toUpperCase()}] \${quote.client.name} - \${quote.description.substring(0,40)}...\`;
+          item.dataset.id = quote.id;
+          item.addEventListener('click', () => openCompanyQuoteDetail(quote.id));
+          container.appendChild(item);
+        });
+      }
+
+      // Open company quote detail to edit/send quote and message client
+      function openCompanyQuoteDetail(quoteId) {
+        const quote = findQuoteById(quoteId);
+        if (!quote) {
+          showToast('Cotización no encontrada.', 'error');
+          return;
+        }
+        // Hide quotes list, show detail
+        document.getElementById('companyQuotesList').style.display = 'none';
+        const detail = document.getElementById('companyQuoteDetail');
+        detail.style.display = 'block';
+
+        // Show quote info basic
+        const detailContent = document.getElementById('quoteDetailContent');
+        let filesHTML = '';
+        if (quote.files && quote.files.length > 0) {
+          filesHTML = '<ul>';
+          quote.files.forEach(f => { filesHTML += '<li>' + f.name + '</li>'; });
+          filesHTML += '</ul>';
+        } else {
+          filesHTML = '<p><em>Sin archivos adjuntos</em></p>';
+        }
+
+        detailContent.innerHTML = \`
+          <p><strong>Cliente:</strong> \${quote.client.name} (<a href="mailto:\${quote.client.email}">\${quote.client.email}</a>)</p>
+          <p><strong>Teléfono:</strong> \${quote.client.phone}</p>
+          <p><strong>Descripción solicitada:</strong> \${quote.description}</p>
+          <p><strong>Archivos adjuntos:</strong> \${filesHTML}</p>
+          <p><strong>Cantidad:</strong> \${quote.quantity}</p>
+          <p><strong>Medidas:</strong> \${quote.measurements || '-'}</p>
+          <p><strong>Material:</strong> \${quote.material || '-'}</p>
+          <p><strong>Fecha límite:</strong> \${formatDate(quote.deadline) || '-'}</p>
+          <p><strong>Estado:</strong> \${quote.status}</p>
+        \`;
+
+        // Populate form fields
+        const form = document.getElementById('formSendQuote');
+        form.quoteDescription.value = quote.quoteDetails ? quote.quoteDetails.description : '';
+        form.unitPrice.value = quote.quoteDetails ? quote.quoteDetails.unitPrice : '';
+        form.discount.value = quote.quoteDetails ? quote.quoteDetails.discount : 0;
+        form.tax.value = quote.quoteDetails ? quote.quoteDetails.tax : 0;
+        form.quoteComments.value = quote.quoteDetails ? quote.quoteDetails.comments : '';
+        form.quoteStatus.value = quote.status;
+        form.pdfFile.value = '';
+
+        // Load messages
+        renderCompanyMessages(quote);
+      }
+
+      // Render company messages panel
+      function renderCompanyMessages(quote) {
+        const container = document.getElementById('companyMessages');
+        container.innerHTML = '';
+        if (!quote.messages || quote.messages.length === 0) {
+          container.innerHTML = '<em>No hay mensajes.</em>';
+          return;
+        }
+        quote.messages.forEach(m => {
+          const div = document.createElement('div');
+          div.classList.add('message', m.from === 'client' ? 'client' : 'company');
+          div.textContent = \`\${m.from === 'client' ? 'Cliente: ' : 'Empresa: '}\${m.text} (\${new Date(m.timestamp).toLocaleString('es-ES')})\`;
+          container.appendChild(div);
+        });
+      }
+
+      // Handle company quote form send/save
+      function handleCompanyQuoteSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+        if (!form.checkValidity()) {
+          form.classList.add('was-validated');
+          return;
+        }
+        const quotes = loadQuotes();
+        // Current quote being edited is the one whose detail is shown
+        const detail = document.getElementById('companyQuoteDetail');
+        const quoteId = Array.from(document.getElementById('companyQuotesList').children).find(item => item.style.display !== 'none')?.dataset.id;
+        // But since quotes list is hidden, better find current editing quote from detail context by scanning all quotes
+        let editingQuote = null;
+        for (const q of quotes) {
+          if (q.status === form.quoteStatus.value || q.quoteDetails?.description === form.quoteDescription.value) {
+            editingQuote = q;
+            break;
+          }
+        }
+        if (!editingQuote) {
+          // fallback to first quote in storage
+          editingQuote = quotes[0];
+        }
+
+        // Actually find quoteId from detail content by matching client name & description to be sure:
+        for (const q of quotes) {
+          if (q.id && document.getElementById('quoteDetailContent').textContent.includes(q.client.name) && document.getElementById('quoteDetailContent').textContent.includes(q.description)) {
+            editingQuote = q;
+            break;
+          }
+        }
+
+        if (!editingQuote) {
+          showToast('Error: No se pudo identificar la cotización actual.', 'error');
+          return;
+        }
+
+        editingQuote.quoteDetails = {
+          description: form.quoteDescription.value.trim(),
+          unitPrice: parseFloat(form.unitPrice.value),
+          discount: parseFloat(form.discount.value),
+          tax: parseFloat(form.tax.value),
+          comments: form.quoteComments.value.trim(),
+          pdfFileName: form.pdfFile.files.length > 0 ? form.pdfFile.files[0].name : (editingQuote.quoteDetails ? editingQuote.quoteDetails.pdfFileName : ''),
+        };
+        editingQuote.status = form.quoteStatus.value;
+
+        // If approved and order not created, create order object
+        if (editingQuote.status === 'aprobada' && !editingQuote.order) {
+          editingQuote.order = {
+            status: 'pendiente',
+            responsible: '',
+            estimatedCompletionDate: '',
+            pickupInfo: '',
+          };
+        }
+        updateQuote(editingQuote);
+
+        showToast(\`Cotización actualizada. Estado: \${editingQuote.status}\`, 'success');
+
+        // Update UI
+        renderCompanyQuotes();
+        document.getElementById('companyQuoteDetail').style.display = 'none';
+        document.getElementById('companyQuotesList').style.display = 'block';
+      }
+
+      // Back button company quotes
+      function companyBackToQuotes() {
+        document.getElementById('companyQuoteDetail').style.display = 'none';
+        document.getElementById('companyQuotesList').style.display = 'block';
+      }
+
+      // Company send message to client on quote
+      function companySendMessage(event) {
+        event.preventDefault();
+        const input = document.getElementById('messageInput');
+        const text = input.value.trim();
+        if (!text) return;
+        // Find current quote id from detail
+        // We'll find selected quote by matching client email or an attribute (for demo, get first quoteId from detail content)
+        const detailContent = document.getElementById('quoteDetailContent');
+        const quotes = loadQuotes();
+        let currentQuote = null;
+        for(const q of quotes) {
+          if (detailContent.textContent.includes(q.client.name)) {
+            currentQuote = q;
+            break;
+          }
+        }
+        if (!currentQuote) {
+          showToast('No se pudo encontrar la cotización para enviar mensaje.', 'error');
+          return;
+        }
+        addMessageToQuote(currentQuote.id, 'company', text);
+        renderCompanyMessages(currentQuote);
+        input.value = '';
+        showToast('Mensaje enviado al cliente.', 'success');
+      }
+
+      // Render company orders list
+      function renderCompanyOrders() {
+        const container = document.getElementById('companyOrdersList');
+        container.innerHTML = '';
+
+        // Orders are embedded within approved quotes
+        const quotes = loadQuotes().filter((q) => q.status === 'aprobada' && q.order);
+
+        if (!quotes.length) {
+          container.innerHTML = '<div class="alert alert-info">No hay pedidos aprobados.</div>';
+          return;
+        }
+
+        quotes.sort((a,b) => b.createdAt - a.createdAt).forEach((quote) => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.classList.add('list-group-item', 'list-group-item-action');
+          const statusColors = {
+            pendiente: 'secondary',
+            en_produccion: 'warning',
+            listo_para_recoger: 'success',
+          };
+          item.classList.add('list-group-item-' + (statusColors[quote.order.status] || 'secondary'));
+
+          item.textContent =
+            \`[\${quote.order.status.toUpperCase()}] \${quote.client.name} - \${quote.description.substring(0,40)}...\`;
+          item.dataset.id = quote.id;
+          item.addEventListener('click', () => openCompanyOrderDetail(quote.id));
+          container.appendChild(item);
+        });
+      }
+
+      // Open company order detail & update form
+      function openCompanyOrderDetail(quoteId) {
+        const quotes = loadQuotes();
+        const quote = quotes.find((q) => q.id === quoteId);
+        if (!quote || !quote.order) {
+          showToast('Pedido no encontrado.', 'error');
+          return;
+        }
+        document.getElementById('companyOrdersList').style.display = 'none';
+        const detail = document.getElementById('companyOrderDetail');
+        detail.style.display = 'block';
+
+        // Show order info
+        const content = document.getElementById('orderDetailContent');
+        content.innerHTML = \`
+          <p><strong>Cliente:</strong> \${quote.client.name} (<a href="mailto:\${quote.client.email}">\${quote.client.email}</a>)</p>
+          <p><strong>Descripción solicitada:</strong> \${quote.description}</p>
+          <p><strong>Estado actual:</strong> \${quote.order.status}</p>
+          <p><strong>Responsable:</strong> \${quote.order.responsible || '-'}</p>
+          <p><strong>Fecha estimada de finalización:</strong> \${quote.order.estimatedCompletionDate ? formatDate(quote.order.estimatedCompletionDate) : '-'}</p>
+          <p><strong>Información de recogida:</strong> \${quote.order.pickupInfo || '-'}</p>
+        \`;
+
+        // Populate form
+        const form = document.getElementById('formUpdateOrder');
+        form.orderStatus.value = quote.order.status;
+        form.responsible.value = quote.order.responsible || '';
+        form.dataset.quoteId = quote.id;
+      }
+
+      // Handle company order update
+      function handleCompanyOrderSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+        const quoteId = form.dataset.quoteId;
+        if (!quoteId) {
+          showToast('Error al identificar el pedido.', 'error');
+          return;
+        }
+        const quotes = loadQuotes();
+        const quote = quotes.find((q) => q.id === quoteId);
+        if (!quote || !quote.order) {
+          showToast('Pedido no encontrado.', 'error');
+          return;
+        }
+        quote.order.status = form.orderStatus.value;
+        quote.order.responsible = form.responsible.value.trim();
+
+        // Here we could add estimatedCompletionDate and pickupInfo if desired in UI
+        updateQuote(quote);
+        showToast('Pedido actualizado.', 'success');
+
+        renderCompanyOrders();
+        form.dataset.quoteId = '';
+        document.getElementById('companyOrderDetail').style.display = 'none';
+        document.getElementById('companyOrdersList').style.display = 'block';
+      }
+
+      // Back button company orders
+      function companyBackToOrders() {
+        document.getElementById('companyOrderDetail').style.display = 'none';
+        document.getElementById('companyOrdersList').style.display = 'block';
+      }
+
+      // Initialize event listeners and UI
+      function init() {
+        setMinDateForDeadlines();
+        populateProfileForm();
+        renderClientQuotes();
+        renderCompanyQuotes();
+        renderCompanyOrders();
+
+        document
+          .getElementById('formQuoteRequest')
+          .addEventListener('submit', handleQuoteRequestSubmit);
+        document
+          .getElementById('files')
+          .addEventListener('change', handleFilesInput);
+        document
+          .getElementById('formProfile')
+          .addEventListener('submit', handleProfileSubmit);
+
+        // Company quote details
+        document
+          .getElementById('formSendQuote')
+          .addEventListener('submit', handleCompanyQuoteSubmit);
+        document
+          .getElementById('btnBackToQuotes')
+          .addEventListener('click', companyBackToQuotes);
+
+        document
+          .getElementById('formCompanyMessage')
+          .addEventListener('submit', companySendMessage);
+
+        // Company order details
+        document
+          .getElementById('formUpdateOrder')
+          .addEventListener('submit', handleCompanyOrderSubmit);
+        document
+          .getElementById('btnBackToOrders')
+          .addEventListener('click', companyBackToOrders);
+
+        // Add keyboard accessibility fix: focus on modal close button on open modal
+        document.body.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            const modal = document.querySelector('.modal');
+            if (modal) modal.remove();
+          }
+        });
+      }
+
+      // Run initialization on DOM ready
+      document.addEventListener('DOMContentLoaded', init);
+    })();
+  </script>
 </body>
 </html>
+
